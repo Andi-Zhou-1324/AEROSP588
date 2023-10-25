@@ -30,7 +30,7 @@ def f_hat(x,mu):
     return result, grad 
 
 
-def plot_contour(mu, xlim=(-2, 2), ylim=(-2, 2), n_points=400):
+def plot_contour(mu, xlim, ylim, n_points=400):
     x = np.linspace(xlim[0], xlim[1], n_points)
     y = np.linspace(ylim[0], ylim[1], n_points)
     
@@ -51,8 +51,19 @@ def plot_contour(mu, xlim=(-2, 2), ylim=(-2, 2), n_points=400):
 
 mu = 0.5
 #---------------------------Time to Optimize---------------------------------
-plot_contour(mu, xlim=(-2,2), ylim=(-2,2), n_points=400)
-"""
-result = uncon_optimizer(f_hat, np.array([[0],[0]]), 1E-6, mu, options=None)
-print(result)
-"""
+
+diff = 10
+rho  = 1.2
+x    = np.array([[0],[0]])
+k    = 0
+while diff > 1E-4:
+    x_past = x
+    result = uncon_optimizer(f_hat, x, 1E-6, mu, options=None)
+
+    x = result[0]
+    mu = mu*1.2
+    diff = np.abs(np.max(x_past) - np.max(x))
+    print(diff)
+    k = k + 1
+
+print(x)

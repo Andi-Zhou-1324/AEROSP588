@@ -201,7 +201,7 @@ def uncon_optimizer(func, x0, epsilon_g, mu, options=None):
             # print(x_k)
 
             g_vec = np.append(g_vec,np.max(np.abs(g)))
-            print(np.max(np.abs(g)))
+            #print(np.max(np.abs(g)))
 
 
 
