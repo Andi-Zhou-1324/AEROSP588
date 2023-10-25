@@ -89,7 +89,7 @@ def uncon_optimizer(func, x0, epsilon_g, mu, options=None):
         k = 0
         alpha_init = 1 #Initial Steps size set to 1
 
-        f, g = func(x0)
+        f, g = func(x0, mu)
         dim = g.size
         g_vec = np.array([np.max(np.abs(g))])
         x_curr = x0
@@ -102,8 +102,8 @@ def uncon_optimizer(func, x0, epsilon_g, mu, options=None):
             else:
                 s = x_curr - x_prev
 
-                sol_curr = func(x_curr)
-                sol_prev = func(x_prev)
+                sol_curr = func(x_curr, mu)
+                sol_prev = func(x_prev, mu)
 
                 y = sol_curr[1] - sol_prev[1]
 
@@ -130,20 +130,20 @@ def uncon_optimizer(func, x0, epsilon_g, mu, options=None):
             x_prev = x_curr
             x_curr = x_next
 
-            f,g = func(x_curr)
+            f,g = func(x_curr, mu)
             g_vec = np.append(g_vec,np.max(np.abs(g)))
 
             k = k+1
 
         print(V_k)
         xopt = x_curr 
-        fopt = func(xopt)
+        fopt = func(xopt,mu)
         fopt = fopt[0]
 
     elif options == "SD OUTPUT-ALL" or options is None:
         #Steepest Descent Implementation
         x_k = x0
-        f,g = func(x0)
+        f,g = func(x0,mu)
         k = 0
         g_vec = np.array([np.max(np.abs(g))])
 
@@ -165,15 +165,15 @@ def uncon_optimizer(func, x0, epsilon_g, mu, options=None):
 
         x_k_vec = np.array(x_k)    
         while np.max(np.abs(g)) > epsilon_g:
-            f,g = func(x_k)
+            f,g = func(x_k,mu)
             #print(np.max(np.abs(g)))
-            mag_f_k = np.linalg.norm(g);
+            mag_f_k = np.linalg.norm(g)
             
             p_k = -g/mag_f_k
 
             a_k = 1
 
-            LineSearchResult = LineSearch_Bracketing_new(a_k, func, 1E-4 , 0.1, 2,x_k,p_k)
+            LineSearchResult = LineSearch_Bracketing_new(a_k, func, 1E-4 , 0.1, 2,x_k,p_k, mu)
 
             #Plotting
 
@@ -201,11 +201,12 @@ def uncon_optimizer(func, x0, epsilon_g, mu, options=None):
             # print(x_k)
 
             g_vec = np.append(g_vec,np.max(np.abs(g)))
+            print(np.max(np.abs(g)))
 
 
 
         xopt = x_k 
-        fopt = func(xopt)
+        fopt = func(xopt, mu)
         fopt = fopt[0]
 
     if output_All:

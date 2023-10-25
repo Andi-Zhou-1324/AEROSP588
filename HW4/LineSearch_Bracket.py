@@ -1,17 +1,17 @@
 import numpy as np
 
 
-def phi(func,x_k, a,p_k):
-    f,g = (func(x_k + a*p_k))
+def phi(func,x_k, a,p_k, mu):
+    f,g = (func(x_k + a*p_k, mu))
     return f,np.dot(g.T,p_k)
 
 
 
-def LineSearch_Bracketing_new(a_init, func,mu_1,mu_2,sigma,x_k,p_k):
+def LineSearch_Bracketing_new(a_init, func,mu_1,mu_2,sigma,x_k,p_k, mu):
     a_1 = 0
     a_2 = a_init
     
-    phi_0, d_phi_0 = phi(func, x_k, 0, p_k)
+    phi_0, d_phi_0 = phi(func, x_k, 0, p_k, mu)
 
     phi_1 = phi_0
     d_phi_1 = d_phi_0
@@ -24,26 +24,26 @@ def LineSearch_Bracketing_new(a_init, func,mu_1,mu_2,sigma,x_k,p_k):
     phi_pinpoint_array = np.array([])
 
     while True:
-        phi_2, d_phi_2 = phi(func, x_k, a_2, p_k)
+        phi_2, d_phi_2 = phi(func, x_k, a_2, p_k, mu)
 
         if not first:
-            phi_1, d_phi_1 = phi(func, x_k, a_1, p_k)
+            phi_1, d_phi_1 = phi(func, x_k, a_1, p_k, mu)
 
         a_array = np.append(a_array,a_2)
         phi_array = np.append(phi_array,phi_2)
 
         if (phi_2 > phi_0 + mu_1*a_2*d_phi_0) or (not first and phi_2 > phi_1):
-            a_star,phi_star, a_pinpoint_array, phi_pinpoint_array = Pinpoint (a_1,a_2,phi_0,phi_1,phi_2,d_phi_0,d_phi_1,d_phi_2,mu_1,mu_2,func,x_k,p_k)
+            a_star,phi_star, a_pinpoint_array, phi_pinpoint_array = Pinpoint (a_1,a_2,phi_0,phi_1,phi_2,d_phi_0,d_phi_1,d_phi_2,mu_1,mu_2,func,x_k,p_k, mu)
             return a_star, phi_star, a_array, phi_array, a_pinpoint_array, phi_pinpoint_array
         
         if np.abs(d_phi_2) < -mu_2*d_phi_0:
             a_star = a_2
-            phi_star = phi(func,x_k,a_star,p_k)
+            phi_star = phi(func,x_k,a_star,p_k, mu)
             phi_star = phi_star[0]
             return a_2, phi_star, a_array, phi_array, a_pinpoint_array, phi_pinpoint_array
         
         elif  d_phi_2 >= 0:
-            a_star, phi_star, a_pinpoint_array, phi_pinpoint_array = Pinpoint (a_2,a_1,phi_0,phi_2,phi_1,d_phi_0,d_phi_2,d_phi_1,mu_1,mu_2,func,x_k,p_k)
+            a_star, phi_star, a_pinpoint_array, phi_pinpoint_array = Pinpoint (a_2,a_1,phi_0,phi_2,phi_1,d_phi_0,d_phi_2,d_phi_1,mu_1,mu_2,func,x_k,p_k, mu)
             return a_star, phi_star, a_array, phi_array, a_pinpoint_array, phi_pinpoint_array
         else:
             a_1 = a_2
@@ -52,7 +52,7 @@ def LineSearch_Bracketing_new(a_init, func,mu_1,mu_2,sigma,x_k,p_k):
         first = False
 
 
-def Pinpoint (a_low,a_high,phi_0,phi_low,phi_high,d_phi_0,d_phi_low,d_phi_high,mu_1,mu_2,func,x_k,p_k):
+def Pinpoint (a_low,a_high,phi_0,phi_low,phi_high,d_phi_0,d_phi_low,d_phi_high,mu_1,mu_2,func,x_k,p_k, mu):
     #Identifies the lowest and high value, and classify them accordingly
 
     k = 0
@@ -63,7 +63,7 @@ def Pinpoint (a_low,a_high,phi_0,phi_low,phi_high,d_phi_0,d_phi_low,d_phi_high,m
         a_p = a_p.item()
         a_p_vec = np.append(a_p_vec,a_p)
 
-        phi_p,d_phi_p = phi(func,x_k,a_p,p_k) #calculating function values at a_p
+        phi_p,d_phi_p = phi(func,x_k,a_p,p_k, mu) #calculating function values at a_p
 
         phi_p_vec = np.append(phi_p_vec,phi_p)
 

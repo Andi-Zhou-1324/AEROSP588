@@ -30,6 +30,29 @@ def f_hat(x,mu):
     return result, grad 
 
 
+def plot_contour(mu, xlim=(-2, 2), ylim=(-2, 2), n_points=400):
+    x = np.linspace(xlim[0], xlim[1], n_points)
+    y = np.linspace(ylim[0], ylim[1], n_points)
+    
+    X, Y = np.meshgrid(x, y)
+    Z = np.zeros_like(X)
+    
+    for i in range(n_points):
+        for j in range(n_points):
+            result = f_hat(np.array([[X[i, j]], [Y[i, j]]]), mu)
+            Z[i,j] = result[0]
+
+    plt.contourf(X, Y, Z, 50, cmap='viridis')
+    plt.colorbar()
+    plt.title(f"Contour plot for mu = {mu}")
+    plt.xlabel("x1")
+    plt.ylabel("x2")
+    plt.show()
+
+mu = 0.5
 #---------------------------Time to Optimize---------------------------------
+plot_contour(mu, xlim=(-2,2), ylim=(-2,2), n_points=400)
+"""
 result = uncon_optimizer(f_hat, np.array([[0],[0]]), 1E-6, mu, options=None)
 print(result)
+"""
