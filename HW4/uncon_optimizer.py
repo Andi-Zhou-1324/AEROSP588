@@ -9,30 +9,51 @@ The autograder will import `uncon_optimizer` from this file. If you change the f
 import numpy as np
 import matplotlib.pyplot as plt
 from LineSearch_Bracket import LineSearch_Bracketing_new
+from LineSearch_BackTrack import LineSearch_BackTrack
 
-def bean_function(x):
+def Uncon_BFGS(func, x0, epsilon_g, mu):
     """
-    x: A 2xN matrix, where N is the number of column vectors.
+    This algorithm implements the Quasi-Newton Unconstrained Optimization. It utilizes the
+    backtracking line search strategy to ensure that the Strong Wolfe Condition is satisfied.
     """
-    x1 = x[0, :]
-    x2 = x[1, :]
-    return (1 - x1)**2 + (1 - x2)**2 + 0.5 * (2 * x2 - x1**2)**2
 
-def bean_function_gradient(x):
-    """
-    x: A 2xN matrix, where N is the number of column vectors.
-    Returns: A 2xN matrix representing the gradient for each column vector.
-    """
-    x1 = x[0, :]
-    x2 = x[1, :]
+    k = 0
+    d = len(x0) #Detecting problem dimension
 
-    df_dx1 = 2*x1**3+2*x1-4*x1*x2-2
-    df_dx2 = 6*x2 - 2*x1**2 - 2
+    g = 100 #Random value to enter loop
+    x = x0
+    while np.abs(np.max(g)) > epsilon_g: #While the maximum component of the gradient is still bigger than the tolerance, loop continues
+        print(np.abs(np.max(g)))
+        if k == 0: #First Iteration
+            f,g = func(x, mu)  
+            V_k = 1/(np.linalg.norm(g))*np.eye(d) #Assuming identity matrix times the magnitude of the gradient
+        else:
+            f_new,g_new = func(x, mu)  
+            y = g_new - g
+            g = g_new
 
-    return np.vstack([df_dx1, df_dx2])
+            r = 1/(s.T@y)
+            li = (np.eye(d)-(r*((s@(y.T)))))
+            ri = (np.eye(d)-(r*((y@(s.T)))))
+            hess_inter = li@V_k@ri
+            V_k = hess_inter + (r*((s@(s.T)))) # BFGS Update
 
-def bean_function_ALL(x):
-    return bean_function(x), bean_function_gradient(x)
+        alpha_0 = 0.01
+        mu_1 = 1E-6
+        rho  = 0.8
+        
+        p = -V_k@g
+        mu_1 = 1E-4
+        mu_2 = 0.9
+        LineSearchResult = LineSearch_Bracketing_new(alpha_0, func, mu_1,mu_2,1.1,x,p,mu)
+        alpha = LineSearchResult[0]
+        s = alpha*p
+        x = x + s
+        k = k + 1
+
+    f_finale,g_finale = func(x, mu) 
+    return x, f_finale, g_finale
+
 
 
 def uncon_optimizer(func, x0, epsilon_g, mu, options=None):
@@ -92,37 +113,25 @@ def uncon_optimizer(func, x0, epsilon_g, mu, options=None):
         f, g = func(x0, mu)
         dim = g.size
         g_vec = np.array([np.max(np.abs(g))])
-        x_curr = x0
-        x_prev = 0 #
-        x_k_vec = np.array(x_curr)    
+        x = x0
+        x_k_vec = np.array(x)    
 
         while np.abs(np.max(g)) > epsilon_g:
-            if k == 0:
+            if k == 0: #First Iteration
                 V_k = 1/(np.linalg.norm(g))*np.eye(dim)
             else:
-                s = x_curr - x_prev
+                s = alpha*p
+                
+  
 
-                sol_curr = func(x_curr, mu)
-                sol_prev = func(x_prev, mu)
-
-                y = sol_curr[1] - sol_prev[1]
-
-                sigma = 1/(np.dot(s.T,y))
-
-                V_k_1 = (np.eye(dim) - np.dot(sigma*s,y.T))
-                V_k_2 = (np.eye(dim) - np.dot(sigma*y,s.T))
-                V_k_3 = np.dot(sigma*s,s.T)
-
-                V_k = np.dot(np.dot(V_k_1,V_k_prev),V_k_2) + V_k_3
-
-            p = -np.dot(V_k,g)
+            p = -V_k@g
 
             mu_1 = 1E-4
             mu_2 = 0.9
             LineSearchResult = LineSearch_Bracketing_new(alpha_init, func, mu_1,mu_2,2,x_curr,p)
             alpha = LineSearchResult[0]
             #print(alpha)
-            x_next = x_curr + np.dot(alpha,p)
+            x_new = x + np.dot(alpha,p)
             x_k_vec = np.hstack((x_k_vec,x_next))
 
             V_k_prev = V_k
@@ -171,7 +180,7 @@ def uncon_optimizer(func, x0, epsilon_g, mu, options=None):
             
             p_k = -g/mag_f_k
 
-            a_k = 1
+            a_k = 1E-6
 
             LineSearchResult = LineSearch_Bracketing_new(a_k, func, 1E-4 , 0.1, 2,x_k,p_k, mu)
 

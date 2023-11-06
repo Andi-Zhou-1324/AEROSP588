@@ -1,7 +1,7 @@
 import sympy as sp
 import numpy as np
 import matplotlib.pyplot as plt
-
+from matplotlib.lines import Line2D
 
 # Define the variables
 b = 0.125 #meter
@@ -24,6 +24,14 @@ DL_Dsigma_1 = sp.diff(L_equation,sigma_1)
 DL_Dsigma_2 = sp.diff(L_equation,sigma_2)
 DL_Ds1  = sp.diff(L_equation,s1)
 DL_Ds2  = sp.diff(L_equation,s2)
+
+print(DL_Dtb)
+print(DL_Dtw)
+print(DL_Dsigma_1)
+print(DL_Dsigma_2)
+print(DL_Ds1)
+print(DL_Ds2)
+
 
 #Both Constraints Active
 substitutions = {
@@ -77,14 +85,20 @@ constraint2 = 1.5 * P / (h * T_w) - tau_yield
 
 # Plot
 plt.contourf(T_b, T_w, F, 50, cmap='viridis')  # '50' denotes number of contour levels
-plt.contour(T_b, T_w, constraint1,label = "Constraint 1", levels=[0], colors=['blue'])
-plt.contour(T_b, T_w, constraint2,label = "Constraint 2", levels=[0], colors=['green'])
-plt.scatter(0.01426039,0.0051724,label = "x*",zorder = 2)
+plt.contourf(T_b, T_w, constraint1, levels=[0, constraint1.max()], colors=['blue'], alpha=0.5)
+legend_line_1 = Line2D([0], [0], color='blue', label='Constraint 1', linewidth=10)
 
+plt.contourf(T_b, T_w, constraint2, levels=[0, constraint2.max()], colors=['green'], alpha=0.5)
+legend_line_2 = Line2D([0], [0], color='green', label='Constraint 2', linewidth=10)
+
+x_optimal = plt.scatter(0.01426039,0.0051724,label = "x*",zorder = 2, color = 'red')
+
+"""
 plt.xlabel('t_b')
 plt.ylabel('t_w')
-plt.legend()
+plt.legend(handles=[legend_line_1, legend_line_2, x_optimal])
 plt.title('Objective Function Contour Plot')
 plt.grid(True)
-
+plt.colorbar()
 plt.show()
+"""
