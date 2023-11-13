@@ -62,7 +62,7 @@ def node2idx(node, DOF):
     return idx
 
 
-def truss(nodes1, nodes2, phi, A, L, E, rho, Fx, Fy, rigid):
+def truss(nodes1, nodes2, phi, A, L, E, rho, Fx, Fy, rigid, Solve):
     """Computes mass and stress for an arbitrary truss structure
 
     Parameters
@@ -134,14 +134,17 @@ def truss(nodes1, nodes2, phi, A, L, E, rho, Fx, Fy, rigid):
     K = np.delete(K, remove, axis=1)
     F = np.delete(F, remove, axis=0)
     S = np.delete(S, remove, axis=1)
+    if Solve == True:
+        # solve for deflections
+        d = np.linalg.solve(K, F)
 
-    # solve for deflections
-    d = np.linalg.solve(K, F)
+        # compute stress
+        stress = np.dot(S, d).reshape(nbar)
+        return mass, stress, K, S, d
 
-    # compute stress
-    stress = np.dot(S, d).reshape(nbar)
+    else:
+        return K, S
 
-    return mass, stress
 
 
 def tenbartruss(A, h, grad_method='FD', aggregate=False):
@@ -233,7 +236,7 @@ def tenbartruss(A, h, grad_method='FD', aggregate=False):
     # This will compute the mass and stress of your truss structure. This call computes the baseline stress with h = 0
     
     J = np.zeros((10,10)) #Jacobian is a 10 by 10 matrix
-    mass, stress = truss(nodes1, nodes2, phi, A, L, E, rho, Fx, Fy, rigid)
+    mass, stress, K, S, d = truss(nodes1, nodes2, phi, A, L, E, rho, Fx, Fy, rigid, Solve = True)
     # TODO: You may want to return additional variables from `truss` function for the implicit analytic methods.
     #       Feel free to modify `truss` function.
 
@@ -247,7 +250,7 @@ def tenbartruss(A, h, grad_method='FD', aggregate=False):
             for j in range(10): 
                 A[j] = A[j] + h #Perturb the specific bar area
 
-                mass_new, stress_new = truss(nodes1, nodes2, phi, A, L, E, rho, Fx, Fy, rigid)
+                mass_new, stress_new, K_new, S_new, d_new = truss(nodes1, nodes2, phi, A, L, E, rho, Fx, Fy, rigid, Solve = True)
                 
                 diff = stress_new[i] - stress[i]
                 J[i,j] = diff/h
@@ -260,12 +263,31 @@ def tenbartruss(A, h, grad_method='FD', aggregate=False):
             for j in range(10): 
                 A[j] = A[j] + h*1j #Perturb the specific bar area in imaginary values
 
-                mass_new, stress_new = truss(nodes1, nodes2, phi, A, L, E, rho, Fx, Fy, rigid)
+                mass_new, stress_new, K_new, S_new, d_new = truss(nodes1, nodes2, phi, A, L, E, rho, Fx, Fy, rigid, Solve = True)
                 
                 J[i,j] = np.imag(stress_new[i])/(h)
 
                 A[j] = np.real(A[j]) #Return to original array
 
+    elif grad_method == 'DT':
+        dr_dx = np.zeros((len(d),len(A)))
+        for i in range (10):
+            A[i] = A[i] + h*1j
+            K_new, S_new = truss(nodes1, nodes2, phi, A, L, E, rho, Fx, Fy, rigid, Solve = False)
+            dr_dx_i = (np.imag(K_new@d))/h
+            dr_dx[:,i] = dr_dx_i.squeeze()
+            A[i] = A[i] - h*1j #Reset array back to its original state
+        phi = np.linalg.solve(K,dr_dx)
+        J   = -S@phi
+    elif grad_method == 'AJ':
+        dr_dx = np.zeros((len(d),len(A)))
+        for i in range (10):
+            A[i] = A[i] + h*1j
+            K_new, S_new = truss(nodes1, nodes2, phi, A, L, E, rho, Fx, Fy, rigid, Solve = False)
+            dr_dx_i = (np.imag(K_new@d))/h
+            dr_dx[:,i] = dr_dx_i.squeeze()
+            A[i] = A[i] - h*1j #Reset array back to its original state
+        xi = np.linalg.solve(K,S.T)
+        J   = -xi.T@dr_dx
 
-    
     return mass, stress, J
