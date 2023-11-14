@@ -1,0 +1,66 @@
+clc
+clear
+close all
+%%
+syms u e x E M f_1
+
+r_1 = u - e*sin(u) - x;
+f   = f_1 - u - x;
+
+A = sym(zeros(3));
+A(1,1) = 1;
+A(3,3) = 1;
+
+A(2,1) = diff(r_1,x);
+A(2,2) = -diff(r_1,u);
+A(3,1) = -diff(f,x);
+A(3,2) = -diff(f,u);
+
+
+B = sym(eye(3));
+
+D_Total = A\B;
+
+D_Total = simplify(subs(D_Total,[u, x], [E, M]))
+
+%% Solving for Kepler's Equation
+
+h_vec = logspace(-1,-16,100);
+
+
+% Define the constants
+e = 0.7;
+M = pi/2;
+
+error = zeros(numel(h_vec),1);
+
+for i = 1:numel(h_vec)
+
+    % Define Kepler's equation as a function handle
+    keplerEq = @(E) E - e*sin(E) - M;
+    
+    % Set options for fsolve to display each iteration
+    % Choose an initial guess for E
+    E0 = M;  % A common initial guess is M itself
+    
+    % Call fsolve to solve for E
+    [E_solution, ~, exitflag, ~] = fsolve(keplerEq, E0);
+    
+    F_1 = E_solution - M;
+    
+    h = h_vec(i);
+    M_new = M+h;
+    keplerEq = @(E) E - e*sin(E) - M_new;
+    [E_solution_new, ~, exitflag, ~] = fsolve(keplerEq, E0);
+    
+    F_2 = E_solution_new - M_new;
+    
+    dE_dx = (F_2 - F_1)/h;
+
+    error(i) = abs(dE_dx - -0.278472901877447);
+end
+
+figure
+plot(h_vec, error,LineWidth = 1.5)
+xlabel('Step Size (h)')
+ylabel('Error (abs)')

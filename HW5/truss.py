@@ -246,30 +246,27 @@ def tenbartruss(A, h, grad_method='FD', aggregate=False):
     #Within FD implementations. We have a double for loop in which we loop through each stress, and within each stress, we perturb the corresponding area to find the derivative dSigma_i/dA_j
     if grad_method == 'FD':
         # implement a finite difference
-        for i in range(10):
-            for j in range(10): 
-                A[j] = A[j] + h #Perturb the specific bar area
+        for j in range(10): 
+            A[j] = A[j] + h #Perturb the specific bar area
 
-                mass_new, stress_new, K_new, S_new, d_new = truss(nodes1, nodes2, phi, A, L, E, rho, Fx, Fy, rigid, Solve = True)
-                
-                diff = stress_new[i] - stress[i]
-                J[i,j] = diff/h
+            mass_new, stress_new, K_new, S_new, d_new = truss(nodes1, nodes2, phi, A, L, E, rho, Fx, Fy, rigid, Solve = True)
+            
+            J[:,j] = (stress_new - stress)/h
 
-                A[j] = A[j] - h #Return to original array
+            A[j] = A[j] - h #Return to original array
 
     elif grad_method == 'CS':
         # implement complex step
-        for i in range(10):
-            for j in range(10): 
-                A[j] = A[j] + h*1j #Perturb the specific bar area in imaginary values
+        for j in range(10): 
+            A[j] = A[j] + h*1j #Perturb the specific bar area in imaginary values
 
-                mass_new, stress_new, K_new, S_new, d_new = truss(nodes1, nodes2, phi, A, L, E, rho, Fx, Fy, rigid, Solve = True)
-                
-                J[i,j] = np.imag(stress_new[i])/(h)
+            mass_new, stress_new, K_new, S_new, d_new = truss(nodes1, nodes2, phi, A, L, E, rho, Fx, Fy, rigid, Solve = True)
+            
+            J[:,j] = np.imag(stress_new)/(h)
 
-                A[j] = np.real(A[j]) #Return to original array
+            A[j] = np.real(A[j]) #Return to original array
 
-    elif grad_method == 'DT':
+    elif grad_method == 'DT_CS':
         dr_dx = np.zeros((len(d),len(A)))
         for i in range (10):
             A[i] = A[i] + h*1j
@@ -279,7 +276,8 @@ def tenbartruss(A, h, grad_method='FD', aggregate=False):
             A[i] = A[i] - h*1j #Reset array back to its original state
         phi = np.linalg.solve(K,dr_dx)
         J   = -S@phi
-    elif grad_method == 'AJ':
+
+    elif grad_method == 'AJ_CS':
         dr_dx = np.zeros((len(d),len(A)))
         for i in range (10):
             A[i] = A[i] + h*1j
